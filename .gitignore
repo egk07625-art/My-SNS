@@ -11,7 +11,7 @@
 !.yarn/versions
 
 # pnpm
-pnpm-lock.yaml
+# pnpm-lock.yaml - 커밋 필요 (배포 환경에서 의존성 버전 고정)
 
 # testing
 /coverage
