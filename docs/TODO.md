@@ -46,16 +46,16 @@
 
 ## 3. 홈 피드 페이지
 
-- [ ] 홈 피드 기본 구조
-  - [ ] `app/(main)/page.tsx` - 홈 피드 페이지 생성
-  - [ ] 피드 배경색 (#FAFAFA) 설정
-  - [ ] PostCard 최대 너비 630px 중앙 정렬
-- [ ] PostCard 컴포넌트 (`components/post/PostCard.tsx`)
-  - [ ] 헤더 섹션 (60px)
-    - [ ] 프로필 이미지 (32px 원형)
-    - [ ] 사용자명 (Bold)
-    - [ ] 시간 표시 (작고 회색)
-    - [ ] ⋯ 메뉴 버튼 (우측)
+- [x] 홈 피드 기본 구조 ✅ (완료)
+  - [x] `app/(main)/page.tsx` - 홈 피드 페이지 생성 ✅ (Server Component)
+  - [x] 피드 배경색 (#FAFAFA) 설정 ✅
+  - [x] PostCard 최대 너비 630px 중앙 정렬 ✅
+- [x] PostCard 컴포넌트 (`components/post/PostCard.tsx`) ✅ (부분 완료)
+  - [x] 헤더 섹션 (60px) ✅
+    - [x] 프로필 이미지 (32px 원형) ✅
+    - [x] 사용자명 (Bold) ✅
+    - [x] 시간 표시 (작고 회색) ✅
+    - [x] ⋯ 메뉴 버튼 (우측) ✅
   - [ ] 이미지 섹션
     - [ ] 정사각형 비율 (1:1) 유지
     - [ ] 모바일 더블탭 좋아요 기능
@@ -72,15 +72,15 @@
 - [ ] PostCardSkeleton 컴포넌트 (`components/post/PostCardSkeleton.tsx`)
   - [ ] 로딩 UI (회색 박스 애니메이션)
   - [ ] Shimmer 효과
-- [ ] PostFeed 컴포넌트 (`components/post/PostFeed.tsx`)
-  - [ ] 게시물 목록 렌더링
+- [x] PostFeed 컴포넌트 (`components/post/PostFeed.tsx`) ✅ (부분 완료)
+  - [x] 게시물 목록 렌더링 ✅
   - [ ] 무한 스크롤 (Intersection Observer)
   - [ ] 페이지네이션 (10개씩 로드)
-- [ ] API 라우트
-  - [ ] `app/api/posts/route.ts` - GET API (페이지네이션)
-    - [ ] 시간 역순 정렬
-    - [ ] 좋아요 수, 댓글 수 포함
-    - [ ] 사용자 정보 JOIN
+- [x] API 라우트 ✅ (부분 완료)
+  - [x] `app/api/posts/route.ts` - GET API (페이지네이션) ✅
+    - [x] 시간 역순 정렬 ✅
+    - [x] 좋아요 수, 댓글 수 포함 ✅
+    - [x] 사용자 정보 JOIN ✅
   - [ ] `app/api/posts/[postId]/route.ts` - GET API (단일 게시물)
 
 ## 4. 좋아요 기능

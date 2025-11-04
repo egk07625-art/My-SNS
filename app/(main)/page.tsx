@@ -18,15 +18,9 @@ import type { PostWithUser } from "@/lib/types";
 
 // 동적 import로 Client Component 로드
 // Route Group 내에서 Client Component 직접 import 시 빌드 에러 방지
-const PostFeed = dynamic(
-  () =>
-    import("@/components/post/PostFeed").then((mod) => ({
-      default: mod.PostFeed,
-    })),
-  {
-    ssr: true, // SSR 활성화 (서버에서 데이터를 가져왔으므로)
-  },
-);
+const PostFeed = dynamic(() => import("@/components/post/PostFeed"), {
+  ssr: true, // SSR 활성화 (서버에서 데이터를 가져왔으므로)
+});
 
 export default async function HomePage() {
   // Server Component에서 데이터 페칭

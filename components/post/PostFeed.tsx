@@ -21,7 +21,7 @@ interface PostFeedProps {
   initialPosts?: PostWithUser[];
 }
 
-export function PostFeed({ initialPosts = [] }: PostFeedProps) {
+export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
   const [posts, setPosts] = useState<PostWithUser[]>(initialPosts);
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [error, setError] = useState<string | null>(null);

@@ -1,0 +1,11 @@
+fix: resolve Route Group build error on Vercel
+
+- Convert app/(main)/page.tsx to Server Component
+- Use dynamic import for PostFeed component to avoid client-reference-manifest.js error
+- Change PostFeed to default export for dynamic import compatibility
+- Add Next.js config optimizations (experimental.optimizePackageImports, webpack config)
+- Clean build cache and reinstall dependencies
+
+This fixes the ENOENT error for page_client-reference-manifest.js in Route Groups
+by using dynamic import instead of direct Client Component import in Server Component.
+
