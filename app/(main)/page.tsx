@@ -1,91 +1,86 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { PostCard } from "@/components/post/PostCard";
-import type { PostWithUser, PostsResponse } from "@/lib/types";
+import { createClerkSupabaseClient } from "@/lib/supabase/server";
+import { PostFeed } from "@/components/post/PostFeed";
+import type { PostWithUser } from "@/lib/types";
 
 /**
  * @file app/(main)/page.tsx
- * @description 홈 피드 페이지
+ * @description 홈 피드 페이지 (Server Component)
  *
  * 메인 레이아웃이 적용된 홈 페이지입니다.
- * 게시물 피드를 표시하며, 향후 PostFeed 컴포넌트로 분리될 예정입니다.
+ * Server Component로 데이터를 가져와서 PostFeed Client Component로 전달합니다.
  *
- * 현재 구현:
- * - PostCard 컴포넌트를 사용하여 게시물 헤더 섹션 표시
- * - API를 통해 게시물 목록 조회
- *
- * 향후 개선:
- * - PostFeed 컴포넌트로 분리
- * - 무한 스크롤 구현
- * - 로딩 상태 (Skeleton UI)
- * - 에러 처리 개선
+ * 이렇게 분리하는 이유:
+ * - Next.js 15에서 Route Group 내 Client Component 페이지 빌드 이슈 해결
+ * - Server Component에서 데이터 페칭으로 초기 로딩 성능 향상
+ * - SEO 최적화
  */
 
-export default function HomePage() {
-  const [posts, setPosts] = useState<PostWithUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function HomePage() {
+  // Server Component에서 데이터 페칭
+  let initialPosts: PostWithUser[] = [];
 
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        console.group("[HomePage] Fetching posts");
-        setLoading(true);
-        setError(null);
+  try {
+    console.group("[HomePage] Fetching posts (Server)");
+    const supabase = createClerkSupabaseClient();
 
-        const response = await fetch("/api/posts?limit=10&offset=0");
+    // post_stats 뷰에서 게시물 목록 조회
+    const { data: postsData, error: postsError } = await supabase
+      .from("post_stats")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "게시물을 불러오는데 실패했습니다.");
-        }
+    if (postsError) {
+      console.error("Database error (posts):", postsError);
+      // 에러가 발생해도 빈 배열로 계속 진행
+    } else if (postsData && postsData.length > 0) {
+      // 사용자 정보 JOIN
+      const userIds = [...new Set(postsData.map((post) => post.user_id))];
+      const { data: usersData } = await supabase
+        .from("users")
+        .select("id, clerk_id, name, created_at")
+        .in("id", userIds);
 
-        const data: PostsResponse = await response.json();
-        console.log("Posts fetched:", data.posts.length);
-        setPosts(data.posts);
-      } catch (err) {
-        console.error("[HomePage] Error fetching posts:", err);
-        setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
-      } finally {
-        setLoading(false);
-        console.groupEnd();
-      }
+      const usersMap = new Map(
+        (usersData || []).map((user) => [user.id, user])
+      );
+
+      // 게시물 데이터와 사용자 정보 결합
+      initialPosts = postsData.map((post) => {
+        const user = usersMap.get(post.user_id);
+
+        return {
+          id: post.id,
+          user_id: post.user_id,
+          image_url: post.image_url,
+          caption: post.caption,
+          created_at: post.created_at,
+          updated_at: post.created_at,
+          likes_count: Number(post.likes_count) || 0,
+          comments_count: Number(post.comments_count) || 0,
+          is_liked: false, // 서버에서는 좋아요 상태 확인 생략 (클라이언트에서 처리)
+          user: user || {
+            id: post.user_id,
+            clerk_id: "unknown",
+            name: "알 수 없는 사용자",
+            created_at: new Date().toISOString(),
+          },
+        } satisfies PostWithUser;
+      });
+
+      console.log(`Fetched ${initialPosts.length} posts on server`);
     }
-
-    fetchPosts();
-  }, []);
+    console.groupEnd();
+  } catch (error) {
+    console.error("[HomePage] Error fetching posts:", error);
+    // 에러 발생 시 빈 배열로 계속 진행
+  }
 
   return (
     <div className="space-y-4">
       {/* 배경색은 layout.tsx에서 #FAFAFA로 설정되어 있음 */}
       {/* PostCard 최대 너비 630px는 layout.tsx에서 max-w-[630px]로 설정되어 있음 */}
-
-      {loading && (
-        <div className="text-center py-8">
-          <p className="text-[#8E8E8E]">게시물을 불러오는 중...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600 text-sm">{error}</p>
-        </div>
-      )}
-
-      {!loading && !error && posts.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-[#8E8E8E]">게시물이 없습니다.</p>
-        </div>
-      )}
-
-      {!loading && !error && posts.length > 0 && (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-      )}
+      <PostFeed initialPosts={initialPosts} />
     </div>
   );
 }
