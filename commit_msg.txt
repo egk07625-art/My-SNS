@@ -1,10 +1,8 @@
-fix: configure Node.js 20 for Vercel deployment
+fix: remove invalid functions config from vercel.json
 
-- Add .nvmrc and .node-version files to specify Node.js 20.18.0
-- Add engines field to package.json (Node.js >=20.9.0 <21.0.0, pnpm >=9.0.0)
-- Add packageManager field to package.json (pnpm@10.19.0)
-- Update vercel.json with Node.js 20.x runtime and frozen-lockfile install
-- Add .npmrc file for pnpm configuration
-- Fix pnpm install ERR_INVALID_THIS error on Vercel
+- Remove functions.runtime setting from vercel.json
+- Next.js automatically detects Node.js version from package.json engines
+- Fix "Function Runtimes must have a valid version" error on Vercel
 
-This fixes the deployment failure caused by Node.js 22 and pnpm compatibility issues.
+The functions configuration was causing deployment errors as Next.js
+projects handle runtime configuration automatically through package.json.
