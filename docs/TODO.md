@@ -31,18 +31,18 @@
 
 ## 2. 레이아웃 구조
 
-- [ ] 레이아웃 컴포넌트
-  - [ ] `app/(main)/layout.tsx` - 메인 레이아웃 생성
-  - [ ] `components/layout/Sidebar.tsx` - Desktop/Tablet 사이드바
-    - [ ] Desktop (244px, 아이콘 + 텍스트)
-    - [ ] Tablet (72px, 아이콘만)
-    - [ ] Hover 효과 및 Active 상태 스타일링
-  - [ ] `components/layout/Header.tsx` - 모바일 헤더 (60px)
-  - [ ] `components/layout/BottomNav.tsx` - 모바일 하단 네비게이션 (50px)
-- [ ] 반응형 레이아웃
-  - [ ] Desktop (1024px+): Full Sidebar + Main Feed
-  - [ ] Tablet (768px~1024px): Icon-only Sidebar + Main Feed
-  - [ ] Mobile (<768px): Header + Bottom Nav
+- [x] 레이아웃 컴포넌트 ✅ (완료)
+  - [x] `app/(main)/layout.tsx` - 메인 레이아웃 생성 ✅
+  - [x] `components/layout/Sidebar.tsx` - Desktop/Tablet 사이드바 ✅
+    - [x] Desktop (244px, 아이콘 + 텍스트) ✅
+    - [x] Tablet (72px, 아이콘만) ✅
+    - [x] Hover 효과 및 Active 상태 스타일링 ✅
+  - [x] `components/layout/Header.tsx` - 모바일 헤더 (60px) ✅
+  - [x] `components/layout/BottomNav.tsx` - 모바일 하단 네비게이션 (50px) ✅
+- [x] 반응형 레이아웃 ✅ (완료)
+  - [x] Desktop (1024px+): Full Sidebar + Main Feed ✅
+  - [x] Tablet (768px~1024px): Icon-only Sidebar + Main Feed ✅
+  - [x] Mobile (<768px): Header + Bottom Nav ✅
 
 ## 3. 홈 피드 페이지
 
