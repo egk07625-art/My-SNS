@@ -1,5 +1,5 @@
 import { createClerkSupabaseClient } from "@/lib/supabase/server";
-import { PostFeed } from "@/components/post/PostFeed";
+import dynamic from "next/dynamic";
 import type { PostWithUser } from "@/lib/types";
 
 /**
@@ -9,11 +9,24 @@ import type { PostWithUser } from "@/lib/types";
  * 메인 레이아웃이 적용된 홈 페이지입니다.
  * Server Component로 데이터를 가져와서 PostFeed Client Component로 전달합니다.
  *
- * 이렇게 분리하는 이유:
- * - Next.js 15에서 Route Group 내 Client Component 페이지 빌드 이슈 해결
+ * 동적 import를 사용하는 이유:
+ * - Next.js 15에서 Route Group 내 Client Component 직접 import 시 빌드 에러 해결
+ * - client-reference-manifest.js 생성 문제 방지
  * - Server Component에서 데이터 페칭으로 초기 로딩 성능 향상
  * - SEO 최적화
  */
+
+// 동적 import로 Client Component 로드
+// Route Group 내에서 Client Component 직접 import 시 빌드 에러 방지
+const PostFeed = dynamic(
+  () =>
+    import("@/components/post/PostFeed").then((mod) => ({
+      default: mod.PostFeed,
+    })),
+  {
+    ssr: true, // SSR 활성화 (서버에서 데이터를 가져왔으므로)
+  },
+);
 
 export default async function HomePage() {
   // Server Component에서 데이터 페칭
@@ -42,7 +55,7 @@ export default async function HomePage() {
         .in("id", userIds);
 
       const usersMap = new Map(
-        (usersData || []).map((user) => [user.id, user])
+        (usersData || []).map((user) => [user.id, user]),
       );
 
       // 게시물 데이터와 사용자 정보 결합
@@ -84,4 +97,3 @@ export default async function HomePage() {
     </div>
   );
 }
-
