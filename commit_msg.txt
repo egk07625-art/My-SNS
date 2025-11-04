@@ -1,11 +1,10 @@
-fix: resolve Route Group build error on Vercel
+fix: configure Node.js 20 for Vercel deployment
 
-- Convert app/(main)/page.tsx to Server Component
-- Use dynamic import for PostFeed component to avoid client-reference-manifest.js error
-- Change PostFeed to default export for dynamic import compatibility
-- Add Next.js config optimizations (experimental.optimizePackageImports, webpack config)
-- Clean build cache and reinstall dependencies
+- Add .nvmrc and .node-version files to specify Node.js 20.18.0
+- Add engines field to package.json (Node.js >=20.9.0 <21.0.0, pnpm >=9.0.0)
+- Add packageManager field to package.json (pnpm@10.19.0)
+- Update vercel.json with Node.js 20.x runtime and frozen-lockfile install
+- Add .npmrc file for pnpm configuration
+- Fix pnpm install ERR_INVALID_THIS error on Vercel
 
-This fixes the ENOENT error for page_client-reference-manifest.js in Route Groups
-by using dynamic import instead of direct Client Component import in Server Component.
-
+This fixes the deployment failure caused by Node.js 22 and pnpm compatibility issues.
