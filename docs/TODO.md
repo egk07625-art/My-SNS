@@ -2,20 +2,22 @@
 
 ## 1. 프로젝트 기본 설정
 
-- [ ] Next.js 프로젝트 초기 설정
-  - [ ] TypeScript 설정 완료
-  - [ ] Tailwind CSS 설정 (인스타 컬러 스키마 적용)
-  - [ ] ESLint, Prettier 설정
-- [ ] Clerk 인증 연동
-  - [ ] Clerk 프로젝트 생성
-  - [ ] 환경 변수 설정
-  - [ ] 한국어 설정
-  - [ ] 회원가입/로그인 페이지 스타일링
-- [ ] Supabase 프로젝트 연동
-  - [ ] Supabase 프로젝트 생성
-  - [ ] 환경 변수 설정
-  - [ ] Supabase 클라이언트 설정
-- [ ] 데이터베이스 스키마 설정 ✅ (완료)
+- [x] Next.js 프로젝트 초기 설정 ✅ (완료)
+  - [x] TypeScript 설정 완료
+  - [x] Tailwind CSS 설정 완료
+  - [x] Tailwind CSS 인스타 컬러 스키마 적용 (#0095f6, #FAFAFA, #ED4956 등) ✅
+  - [x] ESLint 설정 완료
+  - [x] Prettier 설정 완료
+- [x] Clerk 인증 연동 ✅ (완료)
+  - [x] Clerk 프로젝트 생성
+  - [x] 환경 변수 설정
+  - [x] 한국어 설정
+  - [x] 회원가입/로그인 페이지 스타일링 ✅ (Clerk Appearance 적용)
+- [x] Supabase 프로젝트 연동 ✅ (완료)
+  - [x] Supabase 프로젝트 생성
+  - [x] 환경 변수 설정
+  - [x] Supabase 클라이언트 설정
+- [x] 데이터베이스 스키마 설정 ✅ (완료)
   - [x] users 테이블 생성
   - [x] posts 테이블 생성
   - [x] likes 테이블 생성
@@ -23,9 +25,9 @@
   - [x] follows 테이블 생성
   - [x] Views 생성 (post_stats, user_stats)
   - [x] Triggers 설정 (updated_at 자동 업데이트)
-- [ ] Supabase Storage 설정
-  - [ ] uploads 버킷 생성
-  - [ ] Storage RLS 정책 설정 (개발 단계에서는 비활성화)
+- [x] Supabase Storage 설정 ✅ (완료)
+  - [x] uploads 버킷 생성
+  - [x] Storage RLS 정책 설정 (개발 단계에서는 비활성화)
 
 ## 2. 레이아웃 구조
 
@@ -183,11 +185,16 @@
 
 ## 10. 공통 UI 컴포넌트
 
-- [ ] shadcn/ui 컴포넌트 설치
-  - [ ] Button 컴포넌트
+- [x] shadcn/ui 컴포넌트 설치 ✅ (부분 완료)
+  - [x] Button 컴포넌트
   - [ ] Avatar 컴포넌트
-  - [ ] Dialog 컴포넌트 (모달용)
+  - [x] Dialog 컴포넌트 (모달용)
   - [ ] Skeleton 컴포넌트
+  - [x] Input 컴포넌트
+  - [x] Label 컴포넌트
+  - [x] Textarea 컴포넌트
+  - [x] Form 컴포넌트
+  - [x] Accordion 컴포넌트
 - [ ] 커스텀 UI 컴포넌트 (`components/ui/`)
   - [ ] Avatar 컴포넌트 커스터마이징
   - [ ] Skeleton 컴포넌트 커스터마이징
