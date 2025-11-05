@@ -21,7 +21,7 @@ export async function POST() {
       console.error("Unauthorized: No user ID");
       return NextResponse.json(
         { error: "인증이 필요합니다." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -41,7 +41,7 @@ export async function POST() {
       console.error("Error fetching user:", userError);
       return NextResponse.json(
         { error: "사용자를 찾을 수 없습니다. 먼저 사용자를 생성해주세요." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -81,16 +81,24 @@ export async function POST() {
         image_url:
           "https://images.unsplash.com/photo-1762245265298-19aa1625f40d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4MTU3NzB8MHwxfHNlYXJjaHw0fHxuYXR1cmUlMjBsYW5kc2NhcGV8ZW58MHx8Mnx8MTc2MjMxNDg0OXww&ixlib=rb-4.1.0&q=80&w=1080",
         caption: "새로운 시작을 향해 🚀 항상 도전하는 마음으로 살고 싶어요.",
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2일 전
-        updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date(
+          Date.now() - 2 * 24 * 60 * 60 * 1000,
+        ).toISOString(), // 2일 전
+        updated_at: new Date(
+          Date.now() - 2 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
       },
       {
         user_id: userIdForPosts,
         image_url:
           "https://images.unsplash.com/photo-1762245282007-1fe7e42d027b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4MTU3NzB8MHwxfHNlYXJjaHw1fHxuYXR1cmUlMjBsYW5kc2NhcGV8ZW58MHx8Mnx8MTc2MjMxNDg0OXww&ixlib=rb-4.1.0&q=80&w=1080",
         caption: "평화로운 순간들 ☕",
-        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3일 전
-        updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date(
+          Date.now() - 3 * 24 * 60 * 60 * 1000,
+        ).toISOString(), // 3일 전
+        updated_at: new Date(
+          Date.now() - 3 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
       },
     ];
 
@@ -104,21 +112,21 @@ export async function POST() {
       console.error("Error inserting posts:", insertError);
       return NextResponse.json(
         { error: "게시글 삽입 실패", details: insertError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     console.log(`Successfully inserted ${insertedPosts?.length || 0} posts`);
-    console.log("Inserted post IDs:", insertedPosts?.map((p) => p.id));
+    console.log(
+      "Inserted post IDs:",
+      insertedPosts?.map((p) => p.id),
+    );
 
     // post_stats 뷰에서 자동 계산된 통계 확인
     const { data: statsData, error: statsError } = await supabase
       .from("post_stats")
       .select("post_id, likes_count, comments_count")
-      .in(
-        "post_id",
-        insertedPosts?.map((p) => p.id) || []
-      );
+      .in("post_id", insertedPosts?.map((p) => p.id) || []);
 
     if (statsError) {
       console.warn("Error fetching stats (non-critical):", statsError);
@@ -129,16 +137,20 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: `${insertedPosts?.length || 0}개의 샘플 게시글이 생성되었습니다.`,
+      message: `${
+        insertedPosts?.length || 0
+      }개의 샘플 게시글이 생성되었습니다.`,
       posts: insertedPosts,
       stats: statsData,
     });
   } catch (error) {
-    console.error("[API] POST /api/admin/seed-posts - Unexpected error:", error);
+    console.error(
+      "[API] POST /api/admin/seed-posts - Unexpected error:",
+      error,
+    );
     return NextResponse.json(
       { error: "서버 오류가 발생했습니다." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

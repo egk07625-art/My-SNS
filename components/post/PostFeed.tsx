@@ -23,11 +23,13 @@ import type { PostWithUser, PostsResponse } from "@/lib/types";
 
 interface PostFeedProps {
   initialPosts?: PostWithUser[];
+  /** API 호출을 비활성화할지 여부 (모달 백그라운드 등에서 사용) */
+  disableApiCall?: boolean;
 }
 
 const POSTS_PER_PAGE = 10;
 
-export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
+export default function PostFeed({ initialPosts = [], disableApiCall = false }: PostFeedProps) {
   // initialPosts도 유효한 게시물만 필터링 (최소 조건만 체크 - 빈 객체만 제외)
   const validInitialPosts = initialPosts.filter((post, index) => {
     // 빈 객체가 아닌지 확인
@@ -184,9 +186,17 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
       }
     }
 
-    // 서버에서 데이터를 가져왔더라도 클라이언트에서 API 호출
-    fetchInitialPosts();
-  }, [validInitialPosts.length]);
+    // API 호출이 비활성화되지 않은 경우에만 호출
+    if (!disableApiCall) {
+      fetchInitialPosts();
+    } else {
+      // API 호출이 비활성화된 경우, initialPosts만 사용
+      setLoading(false);
+      if (validInitialPosts.length === 0) {
+        setHasMore(false);
+      }
+    }
+  }, [validInitialPosts.length, disableApiCall]);
 
   // 추가 게시물 로드 함수
   const loadMore = useCallback(async () => {

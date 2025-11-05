@@ -34,8 +34,7 @@ export default async function MainLayout({
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      {/* Desktop & Tablet: Sidebar */}
-      <Sidebar />
+      {/* Desktop & Tablet: Sidebar는 루트 레이아웃에서 표시됨 */}
 
       {/* Mobile: Header */}
       <Header />

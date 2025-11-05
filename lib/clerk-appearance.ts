@@ -108,6 +108,17 @@ export const clerkAppearance: Appearance = {
       fontSize: "13px",
       color: "#8e8e8e",
     },
+    // 모달 백그라운드 (반투명하게 설정하여 백그라운드 콘텐츠가 보이도록)
+    modalBackdrop: {
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backdropFilter: "blur(2px)",
+    },
+    // 모달 컨텐츠
+    modalContent: {
+      backgroundColor: "#ffffff",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    },
   },
   variables: {
     colorPrimary: "#0095f6",

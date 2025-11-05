@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignedOut, SignInButton } from "@clerk/nextjs";
 import {
   Home,
   Search,
@@ -78,7 +78,7 @@ export function Sidebar() {
     <aside className="hidden md:block fixed left-0 top-0 h-screen bg-white border-r border-[#DBDBDB] z-40">
       {/* Desktop: 244px 너비 (1024px 이상) */}
       <div className="hidden lg:flex w-[244px] h-full flex-col">
-        <div className="p-6">
+        <div className="p-6 flex flex-col h-full">
           <Link
             href="/"
             className="text-2xl font-bold text-[#262626] mb-8 block"
@@ -86,7 +86,7 @@ export function Sidebar() {
             Instagram
           </Link>
 
-          <nav className="space-y-1">
+          <nav className="space-y-1 flex-1">
             {navItems.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
@@ -113,6 +113,17 @@ export function Sidebar() {
               );
             })}
           </nav>
+
+          {/* 로그인 버튼 (로그인하지 않은 경우에만 표시) */}
+          <SignedOut>
+            <div className="pt-6 pb-6">
+              <SignInButton mode="modal">
+                <button className="w-full bg-[#0095f6] text-white rounded-lg px-4 py-2.5 font-semibold text-sm hover:bg-[#1877f2] active:bg-[#1877f2] transition-colors duration-200 flex items-center justify-center">
+                  <span>로그인</span>
+                </button>
+              </SignInButton>
+            </div>
+          </SignedOut>
         </div>
       </div>
 
@@ -153,6 +164,20 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* 로그인 버튼 (로그인하지 않은 경우에만 표시) */}
+        <SignedOut>
+          <div className="mt-auto pt-4 pb-4">
+            <SignInButton mode="modal">
+              <button
+                className="p-2.5 rounded-lg transition-colors bg-[#0095f6] text-white hover:bg-[#1877f2] active:bg-[#1877f2]"
+                title="로그인"
+              >
+                <span className="text-xs font-semibold">로그인</span>
+              </button>
+            </SignInButton>
+          </div>
+        </SignedOut>
       </div>
     </aside>
   );
