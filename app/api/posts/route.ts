@@ -159,6 +159,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`Found ${likedPostIds.length} liked posts by current user`);
+    console.log("Liked post IDs:", likedPostIds);
 
     // 6. 댓글 미리보기 조회 (배치 조회로 성능 최적화)
     // post_stats 뷰는 post_id를 반환하므로 post.post_id 사용
@@ -241,6 +242,7 @@ export async function GET(request: NextRequest) {
       const user = usersMap.get(post.user_id);
       const postId = post.post_id || post.id;
       const commentsPreview = commentsByPostId.get(postId) || [];
+      const isLiked = likedPostIds.includes(postId);
 
       if (!user) {
         console.warn(`User not found for post ${postId}, user_id: ${post.user_id}`);
@@ -254,7 +256,7 @@ export async function GET(request: NextRequest) {
           updated_at: post.created_at, // post_stats에는 updated_at이 없으므로 created_at 사용
           likes_count: Number(post.likes_count) || 0,
           comments_count: Number(post.comments_count) || 0,
-          is_liked: likedPostIds.includes(postId),
+          is_liked: isLiked,
           comments_preview: commentsPreview,
           user: {
             id: post.user_id,
@@ -264,7 +266,7 @@ export async function GET(request: NextRequest) {
           },
         } satisfies PostWithUser;
       }
-
+      
       return {
         id: postId,
         user_id: post.user_id,
@@ -274,7 +276,7 @@ export async function GET(request: NextRequest) {
         updated_at: post.created_at, // post_stats에는 updated_at이 없으므로 created_at 사용
         likes_count: Number(post.likes_count) || 0,
         comments_count: Number(post.comments_count) || 0,
-        is_liked: likedPostIds.includes(postId),
+        is_liked: isLiked,
         comments_preview: commentsPreview,
         user: {
           id: user.id,

@@ -1,4 +1,5 @@
 import { createClerkSupabaseClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 import dynamic from "next/dynamic";
 import type { PostWithUser } from "@/lib/types";
 
@@ -59,6 +60,7 @@ export default async function HomePage() {
       // 에러가 발생해도 빈 배열로 계속 진행
     } else if (postsData && postsData.length > 0) {
       console.log(`[HomePage] Found ${postsData.length} posts from post_stats`);
+      
       // 사용자 정보 JOIN
       const userIds = [...new Set(postsData.map((post) => post.user_id))];
       const { data: usersData } = await supabase
@@ -70,12 +72,42 @@ export default async function HomePage() {
         (usersData || []).map((user) => [user.id, user]),
       );
 
+      // 현재 사용자의 좋아요 상태 조회 (동적 처리)
+      let likedPostIds: string[] = [];
+      const { userId: clerkUserId } = await auth();
+      if (clerkUserId) {
+        // Clerk user ID로 Supabase user_id 조회
+        const { data: currentUserData } = await supabase
+          .from("users")
+          .select("id")
+          .eq("clerk_id", clerkUserId)
+          .single();
+
+        if (currentUserData?.id) {
+          // post_stats 뷰는 post_id를 반환하므로 post.post_id 사용
+          const postIds = postsData.map((post) => post.post_id || post.id);
+          const { data: userLikesData } = await supabase
+            .from("likes")
+            .select("post_id")
+            .eq("user_id", currentUserData.id)
+            .in("post_id", postIds);
+
+          if (userLikesData) {
+            likedPostIds = userLikesData.map((like) => like.post_id);
+          }
+        }
+      }
+
+      console.log(`[HomePage] Found ${likedPostIds.length} liked posts by current user`);
+
       // 게시물 데이터와 사용자 정보 결합
       // post_stats 뷰는 post_id를 반환하므로 post.post_id 사용
       initialPosts = postsData.map((post) => {
         const user = usersMap.get(post.user_id);
         // post_stats 뷰는 post_id를 반환하므로 post.post_id 또는 post.id 사용
         const postId = post.post_id || post.id;
+        // 동적으로 좋아요 상태 확인
+        const isLiked = likedPostIds.includes(postId);
 
         return {
           id: postId,
@@ -86,7 +118,7 @@ export default async function HomePage() {
           updated_at: post.created_at,
           likes_count: Number(post.likes_count) || 0,
           comments_count: Number(post.comments_count) || 0,
-          is_liked: false, // 서버에서는 좋아요 상태 확인 생략 (클라이언트에서 처리)
+          is_liked: isLiked,
           user: user || {
             id: post.user_id,
             clerk_id: "unknown",

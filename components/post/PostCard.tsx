@@ -76,6 +76,21 @@ export function PostCard({ post }: PostCardProps) {
     }
   }, [post.id]);
 
+  // post.is_liked가 변경될 때 상태 업데이트 (API에서 받은 초기 값 반영)
+  useEffect(() => {
+    if (typeof post.is_liked === "boolean") {
+      console.log(`[PostCard] Updating isLiked for post ${post.id}:`, post.is_liked);
+      setIsLiked(post.is_liked);
+    }
+  }, [post.is_liked, post.id]);
+
+  // post.likes_count가 변경될 때 상태 업데이트 (API에서 받은 초기 값 반영)
+  useEffect(() => {
+    if (typeof post.likes_count === "number") {
+      setLikesCount(post.likes_count);
+    }
+  }, [post.likes_count]);
+
   // 프로필 이미지 URL 가져오기
   // TODO: Clerk에서 프로필 이미지 URL 가져오기 (현재는 기본 이미지 사용)
   const profileImageUrl = getProfileImageUrl(user.clerk_id, null);
