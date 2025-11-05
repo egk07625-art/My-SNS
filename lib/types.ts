@@ -40,6 +40,7 @@ export interface Post {
 // ============================================
 export interface PostWithUser extends Post {
   user: User; // 필수: 사용자 정보가 반드시 포함되어야 함
+  comments_preview?: CommentWithUser[]; // 댓글 미리보기 (최신 2개)
 }
 
 // ============================================

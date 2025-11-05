@@ -76,8 +76,8 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:block fixed left-0 top-0 h-screen bg-white border-r border-[#DBDBDB] z-40">
-      {/* Desktop: 244px 너비 */}
-      <div className="hidden lg:block w-[244px] h-full flex flex-col">
+      {/* Desktop: 244px 너비 (1024px 이상) */}
+      <div className="hidden lg:flex w-[244px] h-full flex-col">
         <div className="p-6">
           <Link
             href="/"
@@ -116,13 +116,14 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Tablet: 72px 너비 (아이콘만) */}
-      <div className="lg:hidden w-[72px] h-full flex flex-col items-center py-4">
+      {/* Tablet: 72px 너비 (아이콘만, 768px~1023px) */}
+      <div className="hidden md:flex lg:hidden w-[72px] h-full flex-col items-center pt-4 pb-4">
         <Link
           href="/"
-          className="text-xl font-bold text-[#262626] mb-8 w-8 h-8 flex items-center justify-center"
+          className="text-2xl font-bold text-[#262626] mb-8 w-full flex items-center justify-center min-h-[40px] px-2 hover:opacity-70 transition-opacity"
+          title="Instagram"
         >
-          I
+          <span className="leading-none select-none block">I</span>
         </Link>
 
         <nav className="space-y-4 flex flex-col items-center">

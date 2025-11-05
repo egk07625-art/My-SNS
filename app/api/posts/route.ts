@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClerkSupabaseClient } from "@/lib/supabase/server";
-import type { PostsResponse, PostWithUser } from "@/lib/types";
+import type { PostsResponse, PostWithUser, CommentWithUser } from "@/lib/types";
 
 /**
  * @file app/api/posts/route.ts
@@ -132,9 +132,84 @@ export async function GET(request: NextRequest) {
 
     console.log(`Found ${likedPostIds.length} liked posts by current user`);
 
-    // 6. 게시물 데이터와 사용자 정보 결합
+    // 6. 댓글 미리보기 조회 (배치 조회로 성능 최적화)
+    const postIds = postsData.map((post) => post.id);
+    const commentsByPostId = new Map<string, CommentWithUser[]>();
+    
+    // 게시물이 있을 때만 댓글 조회
+    if (postIds.length > 0) {
+      // 댓글 조회 (users 테이블 JOIN)
+      const { data: commentsData, error: commentsError } = await supabase
+        .from("comments")
+        .select(`
+          id,
+          post_id,
+          user_id,
+          content,
+          created_at,
+          updated_at,
+          users!comments_user_id_fkey(id, clerk_id, name, created_at)
+        `)
+        .in("post_id", postIds)
+        .order("created_at", { ascending: false });
+
+      // 댓글 조회 실패 시 경고만 출력하고 계속 진행 (비필수 데이터)
+      if (commentsError) {
+        console.warn("Error fetching comments (non-critical):", commentsError);
+      }
+
+      // 게시물별로 최신 댓글 2개만 필터링 (JavaScript에서 처리)
+      if (commentsData && commentsData.length > 0) {
+        // 게시물별로 댓글 그룹화
+        const postCommentsMap = new Map<string, CommentWithUser[]>();
+        
+        for (const comment of commentsData) {
+          const postId = comment.post_id;
+          if (!postCommentsMap.has(postId)) {
+            postCommentsMap.set(postId, []);
+          }
+          const postComments = postCommentsMap.get(postId)!;
+          
+          // 최신 2개만 저장
+          if (postComments.length < 2) {
+            const user = (comment as any).users;
+            if (user) {
+              postComments.push({
+                id: comment.id,
+                post_id: comment.post_id,
+                user_id: comment.user_id,
+                content: comment.content,
+                created_at: comment.created_at,
+                updated_at: comment.updated_at,
+                user: {
+                  id: user.id,
+                  clerk_id: user.clerk_id,
+                  name: user.name,
+                  created_at: user.created_at,
+                },
+              } satisfies CommentWithUser);
+            }
+          }
+        }
+        
+        // 최신순 정렬 (이미 DB에서 정렬되었지만, 보장을 위해)
+        for (const [postId, comments] of postCommentsMap.entries()) {
+          commentsByPostId.set(
+            postId,
+            comments.sort((a, b) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            ).slice(0, 2)
+          );
+        }
+      }
+    }
+
+    console.log(`Found comments for ${commentsByPostId.size} posts`);
+
+    // 7. 게시물 데이터와 사용자 정보 결합
     const posts: PostWithUser[] = postsData.map((post) => {
       const user = usersMap.get(post.user_id);
+      const commentsPreview = commentsByPostId.get(post.id) || [];
 
       if (!user) {
         console.warn(`User not found for post ${post.id}, user_id: ${post.user_id}`);
@@ -149,6 +224,7 @@ export async function GET(request: NextRequest) {
           likes_count: Number(post.likes_count) || 0,
           comments_count: Number(post.comments_count) || 0,
           is_liked: likedPostIds.includes(post.id),
+          comments_preview: commentsPreview,
           user: {
             id: post.user_id,
             clerk_id: "unknown",
@@ -168,6 +244,7 @@ export async function GET(request: NextRequest) {
         likes_count: Number(post.likes_count) || 0,
         comments_count: Number(post.comments_count) || 0,
         is_liked: likedPostIds.includes(post.id),
+        comments_preview: commentsPreview,
         user: {
           id: user.id,
           clerk_id: user.clerk_id,
@@ -177,7 +254,7 @@ export async function GET(request: NextRequest) {
       } satisfies PostWithUser;
     });
 
-    // 7. 전체 게시물 수 조회 (hasMore 계산을 위해)
+    // 8. 전체 게시물 수 조회 (hasMore 계산을 위해)
     const { count: totalCount, error: countError } = await supabase
       .from("post_stats")
       .select("*", { count: "exact", head: true });

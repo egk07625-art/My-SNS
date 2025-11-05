@@ -82,7 +82,10 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[50px] bg-white border-t border-[#DBDBDB] z-50 flex items-center justify-around">
+    <nav
+      id="mobile-bottom-nav"
+      className="md:hidden fixed bottom-0 left-0 right-0 h-[50px] bg-white border-t border-[#DBDBDB] z-[50] flex items-center justify-around"
+    >
       {navItems.map((item) => {
         const active = isActive(item.href);
         const Icon = item.icon;

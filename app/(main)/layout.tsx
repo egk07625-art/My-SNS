@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { MainLayoutDebug } from "@/components/layout/MainLayoutDebug";
 
 /**
  * @file app/(main)/layout.tsx
@@ -16,6 +17,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
  * @dependencies
  * - @clerk/nextjs/server: 인증 확인 (Server Component)
  * - next/navigation: 인증되지 않은 사용자 리다이렉트
+ * - components/layout/MainLayoutDebug: 클라이언트 사이드 디버깅 컴포넌트
  */
 
 export default async function MainLayout({
@@ -39,7 +41,10 @@ export default async function MainLayout({
       <Header />
 
       {/* Main Content */}
-      <main className="md:ml-[72px] lg:ml-[244px] pt-[60px] md:pt-0 pb-16 md:pb-0">
+      <main
+        data-main-layout
+        className="md:ml-[72px] lg:ml-[244px] pt-[60px] pb-16 md:pb-0"
+      >
         <div className="max-w-[630px] mx-auto px-4 py-4 md:py-8">
           {children}
         </div>
@@ -47,6 +52,9 @@ export default async function MainLayout({
 
       {/* Mobile: BottomNav */}
       <BottomNav />
+
+      {/* 개발 환경 디버깅 컴포넌트 */}
+      <MainLayoutDebug />
     </div>
   );
 }

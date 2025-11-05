@@ -1,8 +1,11 @@
-fix: remove invalid functions config from vercel.json
+fix: resolve React key prop warnings and image loading issues
 
-- Remove functions.runtime setting from vercel.json
-- Next.js automatically detects Node.js version from package.json engines
-- Fix "Function Runtimes must have a valid version" error on Vercel
+- Fix React key prop warnings in PostFeed component by using explicit array structure
+- Fix infinite loop in PostCard image error handling by preventing default avatar image requests
+- Add default avatar SVG fallback when profile image fails or is missing
+- Add images.unsplash.com to Next.js image remotePatterns configuration
+- Improve error handling in PostCard for missing profile images
+- Refactor PostFeed to use explicit array mapping for better React key management
 
-The functions configuration was causing deployment errors as Next.js
-projects handle runtime configuration automatically through package.json.
+These changes resolve console errors and improve the user experience when
+profile images are missing or fail to load.

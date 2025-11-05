@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [{ hostname: "img.clerk.com" }],
+    remotePatterns: [
+      { hostname: "img.clerk.com" },
+      { hostname: "images.unsplash.com" },
+    ],
   },
   // Route Group 내 Client Component 빌드 이슈 해결
   experimental: {

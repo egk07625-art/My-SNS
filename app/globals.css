@@ -136,7 +136,36 @@
     @apply bg-background text-foreground;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  main {
+  /* 
+   * 전역 main 스타일은 (main) 그룹 레이아웃과 충돌할 수 있으므로
+   * (main) 그룹 내부에서는 해당 레이아웃의 스타일이 우선 적용되도록 함
+   * 루트 레이아웃이나 (main) 그룹 외부 페이지에서만 이 스타일이 적용됨
+   */
+  main:not([data-main-layout]) {
     @apply max-w-7xl mx-auto pt-16 px-4;
+  }
+}
+
+@layer utilities {
+  /* Shimmer 애니메이션 */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      to right,
+      rgba(229, 231, 235, 0.4) 0%,
+      rgba(243, 244, 246, 0.6) 20%,
+      rgba(229, 231, 235, 0.4) 40%,
+      rgba(229, 231, 235, 0.4) 100%
+    );
+    background-size: 1000px 100%;
   }
 }
