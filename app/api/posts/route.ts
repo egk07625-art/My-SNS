@@ -54,8 +54,10 @@ export async function GET(request: NextRequest) {
 
     // Supabase 클라이언트 생성
     const supabase = createClerkSupabaseClient();
+    console.log("Supabase client created");
 
     // 1. post_stats 뷰에서 게시물 목록 조회 (좋아요 수, 댓글 수 포함)
+    console.log("Querying post_stats view with range:", { offset, limit, end: offset + limit - 1 });
     const { data: postsData, error: postsError } = await supabase
       .from("post_stats")
       .select("*")
@@ -64,14 +66,31 @@ export async function GET(request: NextRequest) {
 
     if (postsError) {
       console.error("Database error (posts):", postsError);
+      console.error("Error code:", postsError.code);
+      console.error("Error message:", postsError.message);
+      console.error("Error details:", postsError.details);
+      console.error("Error hint:", postsError.hint);
       return NextResponse.json(
-        { error: "게시물을 불러오는데 실패했습니다." },
+        { error: "게시물을 불러오는데 실패했습니다.", details: postsError.message },
         { status: 500 }
       );
     }
 
     if (!postsData || postsData.length === 0) {
-      console.log("No posts found");
+      console.log("No posts found in post_stats view");
+      // posts 테이블에서 직접 확인
+      const { data: directPostsData, error: directError } = await supabase
+        .from("posts")
+        .select("id, user_id, image_url, caption, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      
+      if (directError) {
+        console.error("Error checking posts table directly:", directError);
+      } else {
+        console.log("Posts table has", directPostsData?.length || 0, "posts");
+      }
+      
       return NextResponse.json({
         posts: [],
         hasMore: false,
@@ -79,7 +98,15 @@ export async function GET(request: NextRequest) {
       } satisfies PostsResponse);
     }
 
-    console.log(`Found ${postsData.length} posts`);
+    console.log(`Found ${postsData.length} posts from post_stats`);
+    console.log("Sample post data:", postsData[0] ? {
+      post_id: postsData[0].post_id,
+      id: postsData[0].id,
+      user_id: postsData[0].user_id,
+      has_image: !!postsData[0].image_url,
+      has_caption: !!postsData[0].caption,
+      allKeys: Object.keys(postsData[0]),
+    } : "No posts");
 
     // 2. 사용자 정보 JOIN을 위해 user_id 목록 수집
     const userIds = [...new Set(postsData.map((post) => post.user_id))];
@@ -115,7 +142,8 @@ export async function GET(request: NextRequest) {
 
     let likedPostIds: string[] = [];
     if (currentUserData?.id) {
-      const postIds = postsData.map((post) => post.id);
+      // post_stats 뷰는 post_id를 반환하므로 post.post_id 사용
+      const postIds = postsData.map((post) => post.post_id || post.id);
       const { data: userLikesData, error: likesError } = await supabase
         .from("likes")
         .select("post_id")
@@ -133,7 +161,8 @@ export async function GET(request: NextRequest) {
     console.log(`Found ${likedPostIds.length} liked posts by current user`);
 
     // 6. 댓글 미리보기 조회 (배치 조회로 성능 최적화)
-    const postIds = postsData.map((post) => post.id);
+    // post_stats 뷰는 post_id를 반환하므로 post.post_id 사용
+    const postIds = postsData.map((post) => post.post_id || post.id);
     const commentsByPostId = new Map<string, CommentWithUser[]>();
     
     // 게시물이 있을 때만 댓글 조회
@@ -207,15 +236,17 @@ export async function GET(request: NextRequest) {
     console.log(`Found comments for ${commentsByPostId.size} posts`);
 
     // 7. 게시물 데이터와 사용자 정보 결합
+    // post_stats 뷰는 post_id를 반환하므로 post.post_id 또는 post.id 사용
     const posts: PostWithUser[] = postsData.map((post) => {
       const user = usersMap.get(post.user_id);
-      const commentsPreview = commentsByPostId.get(post.id) || [];
+      const postId = post.post_id || post.id;
+      const commentsPreview = commentsByPostId.get(postId) || [];
 
       if (!user) {
-        console.warn(`User not found for post ${post.id}, user_id: ${post.user_id}`);
+        console.warn(`User not found for post ${postId}, user_id: ${post.user_id}`);
         // 사용자 정보가 없어도 게시물은 반환 (기본값 사용)
         return {
-          id: post.id,
+          id: postId,
           user_id: post.user_id,
           image_url: post.image_url,
           caption: post.caption,
@@ -223,7 +254,7 @@ export async function GET(request: NextRequest) {
           updated_at: post.created_at, // post_stats에는 updated_at이 없으므로 created_at 사용
           likes_count: Number(post.likes_count) || 0,
           comments_count: Number(post.comments_count) || 0,
-          is_liked: likedPostIds.includes(post.id),
+          is_liked: likedPostIds.includes(postId),
           comments_preview: commentsPreview,
           user: {
             id: post.user_id,
@@ -235,7 +266,7 @@ export async function GET(request: NextRequest) {
       }
 
       return {
-        id: post.id,
+        id: postId,
         user_id: post.user_id,
         image_url: post.image_url,
         caption: post.caption,
@@ -243,7 +274,7 @@ export async function GET(request: NextRequest) {
         updated_at: post.created_at, // post_stats에는 updated_at이 없으므로 created_at 사용
         likes_count: Number(post.likes_count) || 0,
         comments_count: Number(post.comments_count) || 0,
-        is_liked: likedPostIds.includes(post.id),
+        is_liked: likedPostIds.includes(postId),
         comments_preview: commentsPreview,
         user: {
           id: user.id,

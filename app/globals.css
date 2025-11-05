@@ -168,4 +168,24 @@
     );
     background-size: 1000px 100%;
   }
+
+  /* 더블탭 하트 애니메이션 */
+  @keyframes fadeInOut {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  .animate-fade-in-out {
+    animation: fadeInOut 600ms ease-out;
+  }
 }

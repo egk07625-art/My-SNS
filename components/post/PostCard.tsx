@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Heart } from "lucide-react";
 import { formatRelativeTime, getProfileImageUrl } from "@/lib/utils";
 import type { PostWithUser } from "@/lib/types";
 
@@ -12,10 +12,12 @@ import type { PostWithUser } from "@/lib/types";
  * @description 게시물 카드 컴포넌트
  *
  * Instagram 스타일의 게시물 카드 컴포넌트입니다.
- * 현재는 헤더 섹션만 구현되어 있으며, 향후 이미지, 액션 버튼, 컨텐츠 섹션이 추가될 예정입니다.
  *
  * 주요 기능:
  * - 헤더 섹션 (프로필 이미지, 사용자명, 시간, 메뉴)
+ * - 이미지 섹션 (더블탭 좋아요 지원)
+ * - 액션 버튼 섹션 (좋아요 버튼)
+ * - 컨텐츠 섹션 (좋아요 수, 캡션, 댓글 미리보기)
  *
  * @dependencies
  * - next/image: 이미지 최적화
@@ -39,11 +41,40 @@ export function PostCard({ post }: PostCardProps) {
     return null;
   }
 
+  // post.id 검증 (필수)
+  if (!post.id || typeof post.id !== "string" || post.id.trim() === "") {
+    console.error("PostCard: Invalid or missing post.id", {
+      postId: post.id,
+      post: post,
+      postKeys: Object.keys(post),
+    });
+    return null;
+  }
+
   const { user } = post;
 
   // 프로필 이미지 로드 실패 상태 관리
   const [imageError, setImageError] = useState(false);
   const hasErrorHandled = useRef(false);
+
+  // 좋아요 상태 관리
+  const [isLiked, setIsLiked] = useState(post.is_liked ?? false);
+  const [likesCount, setLikesCount] = useState(post.likes_count ?? 0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // post.id를 useRef로 저장 (항상 최신 값 참조)
+  // post.id가 이미 검증되었으므로 안전하게 사용 가능
+  const postIdRef = useRef(post.id);
+  // post가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    if (post.id && typeof post.id === "string" && post.id.trim() !== "") {
+      postIdRef.current = post.id;
+    } else {
+      console.warn("PostCard: post.id became invalid", post.id);
+    }
+  }, [post.id]);
 
   // 프로필 이미지 URL 가져오기
   // TODO: Clerk에서 프로필 이미지 URL 가져오기 (현재는 기본 이미지 사용)
@@ -65,6 +96,102 @@ export function PostCard({ post }: PostCardProps) {
       setImageError(true);
     }
   };
+
+  // 좋아요 토글 핸들러
+  const handleLikeToggle = useCallback(async (showDoubleTap = false) => {
+    // postId 검증 (useRef로 항상 최신 값 참조)
+    const currentPostId = postIdRef.current;
+    if (!currentPostId || typeof currentPostId !== "string" || currentPostId.trim() === "") {
+      console.error("[PostCard] Invalid post.id in handleLikeToggle:", {
+        currentPostId,
+        postIdFromRef: postIdRef.current,
+        postIdFromProps: post.id,
+        postObject: post,
+      });
+      return;
+    }
+
+    // 중복 요청 방지
+    if (isLoading) {
+      console.log("[PostCard] Like request already in progress, ignoring");
+      return;
+    }
+
+    // Optimistic Update: 상태를 먼저 업데이트
+    const previousIsLiked = isLiked;
+    const previousLikesCount = likesCount;
+
+    const newIsLiked = !isLiked;
+    const newLikesCount = newIsLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+
+    setIsLiked(newIsLiked);
+    setLikesCount(newLikesCount);
+    setIsLoading(true);
+    setIsAnimating(true);
+
+    // 더블탭 시 큰 하트 애니메이션 표시
+    if (showDoubleTap && newIsLiked) {
+      setShowDoubleTapHeart(true);
+      setTimeout(() => {
+        setShowDoubleTapHeart(false);
+      }, 600);
+    }
+
+    try {
+      console.group("[PostCard] Like toggle");
+      console.log("Post ID:", currentPostId);
+      console.log("Action:", newIsLiked ? "Like" : "Unlike");
+
+      const requestBody = { post_id: currentPostId };
+      console.log("Request body:", requestBody);
+
+      const method = newIsLiked ? "POST" : "DELETE";
+      const response = await fetch("/api/likes", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      console.log("Like toggle successful");
+      console.groupEnd();
+    } catch (error) {
+      console.error("[PostCard] Like toggle failed:", error);
+      console.groupEnd();
+
+      // 실패 시 이전 상태로 롤백
+      setIsLiked(previousIsLiked);
+      setLikesCount(previousLikesCount);
+      setShowDoubleTapHeart(false);
+
+      // 사용자에게 에러 알림 (추후 toast로 개선 가능)
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+      }
+    } finally {
+      setIsLoading(false);
+      // 애니메이션 종료 (CSS transition 시간에 맞춰)
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 200);
+    }
+  }, [isLiked, likesCount, isLoading]);
+
+  // 더블탭 핸들러
+  const handleDoubleClick = useCallback(() => {
+    console.log("[PostCard] Double tap detected on image");
+    
+    // 더블탭 시 좋아요가 아니면 좋아요 생성
+    if (!isLiked && postIdRef.current) {
+      handleLikeToggle(true);
+    }
+  }, [isLiked, handleLikeToggle]);
 
   // 기본 아바타 컴포넌트
   const DefaultAvatar = () => (
@@ -144,27 +271,65 @@ export function PostCard({ post }: PostCardProps) {
             src={post.image_url}
             alt={post.caption || "게시물 이미지"}
             fill
-            className="object-cover"
+            className="object-cover select-none"
             onError={(e) => {
               console.warn("Post image load failed:", post.image_url);
               const target = e.target as HTMLImageElement;
               target.style.display = "none";
             }}
+            onDoubleClick={handleDoubleClick}
           />
+          {/* 더블탭 큰 하트 애니메이션 */}
+          {showDoubleTapHeart && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in-out">
+              <Heart
+                className="w-24 h-24 text-white fill-red-500"
+                style={{
+                  filter: "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))",
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* 액션 버튼 섹션 (향후 구현) */}
-      {/* <div className="h-12 px-4 flex items-center justify-between">
-        ...
-      </div> */}
+      {/* 액션 버튼 섹션 */}
+      <div className="h-12 px-4 flex items-center gap-4">
+        {/* 좋아요 버튼 */}
+        <button
+          type="button"
+          className="flex-shrink-0 p-1 hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label={isLiked ? "좋아요 취소" : "좋아요"}
+          onClick={() => handleLikeToggle(false)}
+          disabled={isLoading || !postIdRef.current}
+        >
+          <Heart
+            className={`w-6 h-6 transition-all duration-200 ${
+              isLiked
+                ? "text-red-500 fill-red-500"
+                : "text-[#262626] fill-none"
+            } ${
+              isAnimating ? "scale-[1.3]" : "scale-100"
+            }`}
+          />
+        </button>
+
+        {/* 댓글 버튼 (향후 구현) */}
+        {/* <button
+          type="button"
+          className="flex-shrink-0 p-1 hover:opacity-70 transition-opacity"
+          aria-label="댓글"
+        >
+          <MessageCircle className="w-6 h-6 text-[#262626]" />
+        </button> */}
+      </div>
 
       {/* 컨텐츠 섹션 */}
       <div className="px-4 pb-4 space-y-2">
         {/* 좋아요 수 */}
-        {post.likes_count !== undefined && post.likes_count > 0 && (
+        {likesCount > 0 && (
           <div className="text-sm font-semibold text-[#262626]">
-            좋아요 {post.likes_count.toLocaleString()}개
+            좋아요 {likesCount.toLocaleString()}개
           </div>
         )}
 

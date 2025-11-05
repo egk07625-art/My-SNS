@@ -62,10 +62,11 @@ export async function GET(
     const supabase = createClerkSupabaseClient();
 
     // 1. post_stats 뷰에서 게시물 조회 (좋아요 수, 댓글 수 포함)
+    // post_stats 뷰는 post_id를 반환하므로 post_id로 조회
     const { data: postData, error: postError } = await supabase
       .from("post_stats")
       .select("*")
-      .eq("id", postId)
+      .eq("post_id", postId)
       .single();
 
     if (postError) {
@@ -92,7 +93,9 @@ export async function GET(
       );
     }
 
-    console.log("Post found:", postData.id);
+    // post_stats 뷰는 post_id를 반환하므로 postData.post_id 사용
+    const actualPostId = postData.post_id || postData.id;
+    console.log("Post found:", actualPostId);
 
     // 2. 사용자 정보 조회
     const { data: userData, error: userError } = await supabase
@@ -134,8 +137,9 @@ export async function GET(
     console.log("Is liked:", isLiked);
 
     // 4. 게시물 데이터 구성
+    // post_stats 뷰는 post_id를 반환하므로 actualPostId 사용
     const post: PostWithUser = {
-      id: postData.id,
+      id: actualPostId,
       user_id: postData.user_id,
       image_url: postData.image_url,
       caption: postData.caption,

@@ -28,14 +28,92 @@ interface PostFeedProps {
 const POSTS_PER_PAGE = 10;
 
 export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
-  const [posts, setPosts] = useState<PostWithUser[]>(initialPosts);
+  // initialPosts도 유효한 게시물만 필터링 (최소 조건만 체크 - 빈 객체만 제외)
+  const validInitialPosts = initialPosts.filter((post, index) => {
+    // 빈 객체가 아닌지 확인
+    if (!post || typeof post !== "object" || Object.keys(post).length === 0) {
+      console.warn(`[PostFeed] Post[${index}] is empty or invalid:`, post);
+      return false;
+    }
+    
+    // post.id가 유효한 문자열인지 확인
+    if (!post.id) {
+      console.warn(`[PostFeed] Post[${index}] missing id:`, {
+        post,
+        keys: Object.keys(post),
+        idType: typeof post.id,
+        idValue: post.id,
+      });
+      return false;
+    }
+    
+    if (typeof post.id !== "string") {
+      console.warn(`[PostFeed] Post[${index}] id is not string:`, {
+        id: post.id,
+        idType: typeof post.id,
+        postKeys: Object.keys(post),
+      });
+      return false;
+    }
+    
+    if (post.id.trim() === "") {
+      console.warn(`[PostFeed] Post[${index}] id is empty string:`, {
+        id: post.id,
+        postKeys: Object.keys(post),
+      });
+      return false;
+    }
+    
+    // post.user가 있고 name이 있는지 확인 (clerk_id는 선택적)
+    if (!post.user) {
+      console.warn(`[PostFeed] Post[${index}] missing user:`, {
+        id: post.id,
+        postKeys: Object.keys(post),
+      });
+      return false;
+    }
+    
+    if (typeof post.user !== "object") {
+      console.warn(`[PostFeed] Post[${index}] user is not object:`, {
+        id: post.id,
+        user: post.user,
+        userType: typeof post.user,
+      });
+      return false;
+    }
+    
+    if (!post.user.name) {
+      console.warn(`[PostFeed] Post[${index}] user missing name:`, {
+        id: post.id,
+        user: post.user,
+        userKeys: Object.keys(post.user),
+      });
+      return false;
+    }
+    
+    return true;
+  });
+  
+  console.log("[PostFeed] Initial posts:", initialPosts.length, "Valid:", validInitialPosts.length);
+  if (initialPosts.length > 0 && validInitialPosts.length === 0) {
+    console.error("[PostFeed] All posts were filtered out! Sample post structure:", {
+      firstPost: initialPosts[0],
+      firstPostKeys: initialPosts[0] ? Object.keys(initialPosts[0]) : [],
+      firstPostId: initialPosts[0]?.id,
+      firstPostIdType: typeof initialPosts[0]?.id,
+      firstPostUser: initialPosts[0]?.user,
+      firstPostUserKeys: initialPosts[0]?.user ? Object.keys(initialPosts[0].user) : [],
+    });
+  }
+
+  const [posts, setPosts] = useState<PostWithUser[]>(validInitialPosts);
   // 서버에서 데이터를 가져왔으면 초기 로딩 상태를 false로 설정
   // (백그라운드에서 API 호출로 데이터 업데이트)
-  const [loading, setLoading] = useState(initialPosts.length === 0);
+  const [loading, setLoading] = useState(validInitialPosts.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(initialPosts.length);
+  const [offset, setOffset] = useState(validInitialPosts.length);
 
   // 초기 로딩 (서버에서 데이터를 가져왔더라도 클라이언트에서 한 번은 API 호출)
   // 이유: 서버에서 가져온 데이터는 is_liked가 항상 false이므로, 
@@ -45,7 +123,7 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
       try {
         console.group("[PostFeed] Fetching initial posts (Client)");
         // 서버에서 데이터를 가져오지 못한 경우에만 로딩 상태 표시
-        if (initialPosts.length === 0) {
+        if (validInitialPosts.length === 0) {
           setLoading(true);
         }
         setError(null);
@@ -59,19 +137,46 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
 
         const data: PostsResponse = await response.json();
         console.log("Initial posts fetched:", data.posts.length);
-        setPosts(data.posts);
+        
+        // 유효한 게시물만 필터링 (최소 조건만 체크 - 빈 객체만 제외)
+        const validPosts = data.posts.filter((post) => {
+          // 빈 객체가 아닌지 확인
+          if (!post || typeof post !== "object" || Object.keys(post).length === 0) {
+            return false;
+          }
+          // post.id가 유효한 문자열인지 확인
+          if (!post.id || typeof post.id !== "string" || post.id.trim() === "") {
+            return false;
+          }
+          // post.user가 있고 name이 있는지 확인 (clerk_id는 선택적)
+          if (!post.user || typeof post.user !== "object" || !post.user.name) {
+            return false;
+          }
+          return true;
+        });
+        
+        console.log("[PostFeed] Fetched posts:", data.posts.length, "Valid after filtering:", validPosts.length);
+        
+        // 서버에서 가져온 initialPosts가 있고, API 응답이 비어있으면 서버 데이터 유지
+        if (validPosts.length === 0 && validInitialPosts.length > 0) {
+          console.log("[PostFeed] API returned empty, keeping server-side posts");
+          setPosts(validInitialPosts);
+          setOffset(validInitialPosts.length);
+        } else {
+          setPosts(validPosts);
+          setOffset(validPosts.length);
+        }
         setHasMore(data.hasMore);
-        setOffset(data.posts.length);
       } catch (err) {
         console.error("[PostFeed] Error fetching initial posts:", err);
         setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
         
-        // 에러 발생 시 서버에서 받은 initialPosts를 fallback으로 사용
-        if (initialPosts.length > 0) {
+        // 에러 발생 시 서버에서 받은 validInitialPosts를 fallback으로 사용
+        if (validInitialPosts.length > 0) {
           console.log("Using server-side initialPosts as fallback");
-          setPosts(initialPosts);
-          setHasMore(initialPosts.length === POSTS_PER_PAGE);
-          setOffset(initialPosts.length);
+          setPosts(validInitialPosts);
+          setHasMore(validInitialPosts.length === POSTS_PER_PAGE);
+          setOffset(validInitialPosts.length);
         }
       } finally {
         setLoading(false);
@@ -81,7 +186,7 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
 
     // 서버에서 데이터를 가져왔더라도 클라이언트에서 API 호출
     fetchInitialPosts();
-  }, [initialPosts]);
+  }, [validInitialPosts.length]);
 
   // 추가 게시물 로드 함수
   const loadMore = useCallback(async () => {
@@ -106,10 +211,29 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
       const data: PostsResponse = await response.json();
       console.log("More posts fetched:", data.posts.length);
 
-      if (data.posts.length > 0) {
-        setPosts((prev) => [...prev, ...data.posts]);
+      // 유효한 게시물만 필터링 (최소 조건만 체크 - 빈 객체만 제외)
+      const validPosts = data.posts.filter((post) => {
+        // 빈 객체가 아닌지 확인
+        if (!post || typeof post !== "object" || Object.keys(post).length === 0) {
+          return false;
+        }
+        // post.id가 유효한 문자열인지 확인
+        if (!post.id || typeof post.id !== "string" || post.id.trim() === "") {
+          return false;
+        }
+        // post.user가 있고 name이 있는지 확인 (clerk_id는 선택적)
+        if (!post.user || typeof post.user !== "object" || !post.user.name) {
+          return false;
+        }
+        return true;
+      });
+
+      console.log("[PostFeed] More posts fetched:", data.posts.length, "Valid after filtering:", validPosts.length);
+
+      if (validPosts.length > 0) {
+        setPosts((prev) => [...prev, ...validPosts]);
         setHasMore(data.hasMore);
-        setOffset((prev) => prev + data.posts.length);
+        setOffset((prev) => prev + validPosts.length);
       } else {
         setHasMore(false);
       }
@@ -176,12 +300,27 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
     );
   }
 
+  // 유효한 게시물만 필터링 (최소 조건만 체크 - 빈 객체만 제외)
+  const validPosts = posts.filter((post) => {
+    return (
+      post &&
+      typeof post === "object" &&
+      Object.keys(post).length > 0 && // 빈 객체가 아닌지 확인
+      post.id &&
+      typeof post.id === "string" &&
+      post.id.trim() !== "" &&
+      post.user &&
+      typeof post.user === "object" &&
+      post.user.name // user.name이 있으면 충분 (clerk_id는 선택적)
+    );
+  });
+
   return (
     <div className="space-y-4">
       {[
-        // 게시물 목록
-        ...posts.map((post) => (
-          <PostCard key={post.id || `post-${post.created_at}`} post={post} />
+        // 게시물 목록 (유효한 게시물만)
+        ...validPosts.map((post) => (
+          <PostCard key={post.id} post={post} />
         )),
         // 추가 로딩 스켈레톤
         loadingMore && (
@@ -192,7 +331,7 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
           </div>
         ),
         // 에러 상태 (추가 로딩 실패)
-        error && posts.length > 0 && (
+        error && validPosts.length > 0 && (
           <div key="error-message" className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-yellow-800 text-sm mb-3">{error}</p>
             <button
@@ -213,7 +352,7 @@ export default function PostFeed({ initialPosts = [] }: PostFeedProps) {
         hasMore && !loadingMore && (
           <div key="sentinel" ref={sentinelRef} className="h-1" />
         ),
-      ].filter(Boolean)}
+      ]}
     </div>
   );
 }

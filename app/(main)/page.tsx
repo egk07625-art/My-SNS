@@ -29,8 +29,10 @@ export default async function HomePage() {
   try {
     console.group("[HomePage] Fetching posts (Server)");
     const supabase = createClerkSupabaseClient();
+    console.log("[HomePage] Supabase client created");
 
     // post_stats 뷰에서 게시물 목록 조회
+    console.log("[HomePage] Querying post_stats view");
     const { data: postsData, error: postsError } = await supabase
       .from("post_stats")
       .select("*")
@@ -38,9 +40,25 @@ export default async function HomePage() {
       .limit(10);
 
     if (postsError) {
-      console.error("Database error (posts):", postsError);
+      console.error("[HomePage] Database error (posts):", postsError);
+      console.error("[HomePage] Error code:", postsError.code);
+      console.error("[HomePage] Error message:", postsError.message);
+      console.error("[HomePage] Error details:", postsError.details);
+      // posts 테이블에서 직접 확인
+      const { data: directPosts, error: directError } = await supabase
+        .from("posts")
+        .select("id, user_id, image_url, caption, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      
+      if (directError) {
+        console.error("[HomePage] Error checking posts table:", directError);
+      } else {
+        console.log("[HomePage] Posts table has", directPosts?.length || 0, "posts directly");
+      }
       // 에러가 발생해도 빈 배열로 계속 진행
     } else if (postsData && postsData.length > 0) {
+      console.log(`[HomePage] Found ${postsData.length} posts from post_stats`);
       // 사용자 정보 JOIN
       const userIds = [...new Set(postsData.map((post) => post.user_id))];
       const { data: usersData } = await supabase
@@ -53,11 +71,14 @@ export default async function HomePage() {
       );
 
       // 게시물 데이터와 사용자 정보 결합
+      // post_stats 뷰는 post_id를 반환하므로 post.post_id 사용
       initialPosts = postsData.map((post) => {
         const user = usersMap.get(post.user_id);
+        // post_stats 뷰는 post_id를 반환하므로 post.post_id 또는 post.id 사용
+        const postId = post.post_id || post.id;
 
         return {
-          id: post.id,
+          id: postId,
           user_id: post.user_id,
           image_url: post.image_url,
           caption: post.caption,
@@ -75,7 +96,34 @@ export default async function HomePage() {
         } satisfies PostWithUser;
       });
 
-      console.log(`Fetched ${initialPosts.length} posts on server`);
+      console.log(`[HomePage] Fetched ${initialPosts.length} posts on server`);
+      if (initialPosts.length > 0) {
+        console.log("[HomePage] Sample post structure:", {
+          id: initialPosts[0].id,
+          idType: typeof initialPosts[0].id,
+          user: initialPosts[0].user,
+          user_name: initialPosts[0].user?.name,
+          user_nameType: typeof initialPosts[0].user?.name,
+          has_image: !!initialPosts[0].image_url,
+          allKeys: Object.keys(initialPosts[0]),
+          userKeys: initialPosts[0].user ? Object.keys(initialPosts[0].user) : [],
+          fullPost: JSON.stringify(initialPosts[0], null, 2),
+        });
+      }
+    } else {
+      console.log("[HomePage] No posts found in post_stats view");
+      // posts 테이블에서 직접 확인
+      const { data: directPosts, error: directError } = await supabase
+        .from("posts")
+        .select("id, user_id, image_url, caption, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      
+      if (directError) {
+        console.error("[HomePage] Error checking posts table:", directError);
+      } else {
+        console.log("[HomePage] Posts table has", directPosts?.length || 0, "posts directly");
+      }
     }
     console.groupEnd();
   } catch (error) {
